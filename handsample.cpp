@@ -6,7 +6,7 @@ int size_of_mosaic = 0;
 int main(int argc, char *argv[])
 {
   // 1. load classifier
-  std::string cascadeName = "/usr/share/opencv/haarcascades/aGest.xml"; //Haar-like
+  std::string cascadeName = "/usr/share/opencv/haarcascades/Hand.Cascade.1.xml"; //Haar-like
   cv::CascadeClassifier cascade;
   if(!cascade.load(cascadeName)){
     printf("ERROR: cascadeFile not found\n");
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   // 2. initialize VideoCapture
   cv::Mat frame;
   cv::VideoCapture cap;
-  cap.open(0);
+  cap.open(1);
   cap >> frame;
   
   // 3. prepare window and trackbar
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     std::vector<cv::Rect> faces;
     // multi-scale face searching
     // image, size, scale, num, flag, smallest rect
-    cascade.detectMultiScale(smallImg, faces, 1.01, 2, CV_HAAR_SCALE_IMAGE, cv::Size(30, 30));
+    cascade.detectMultiScale(smallImg, faces, 1.1, 2, CV_HAAR_SCALE_IMAGE, cv::Size(30, 30));
 
     // 7. mosaic(pixelate) face-region
     for(int i = 0; i < faces.size(); i++){

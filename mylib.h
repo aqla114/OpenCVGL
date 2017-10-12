@@ -1,20 +1,22 @@
 void draw_axis()
 {
- glBegin(GL_LINES);
-  
- glColor3f ( 1.0f, 0.0f, 0.0f );
- glVertex3f( 50.0f, 0.0f, 0.0f );
- glVertex3f( 0.0f, 0.0f, 0.0f );
-  
- glColor3f ( 0.0f, 1.0f, 0.0f );
- glVertex3f( 0.0f, 50.0f, 0.0f );
- glVertex3f( 0.0f, 0.0f, 0.0f );
-  
- glColor3f ( 0.0f, 0.0f, 1.0f );
- glVertex3f( 0.0f, 0.0f, 50.0f );
- glVertex3f( 0.0f, 0.0f, 0.0f );
-  
- glEnd();
+  glPushMatrix();
+  glBegin(GL_LINES);
+    
+  glColor3f ( 1.0f, 0.0f, 0.0f );
+  glVertex3f( 50.0f, 0.0f, 0.0f );
+  glVertex3f( 0.0f, 0.0f, 0.0f );
+    
+  glColor3f ( 0.0f, 1.0f, 0.0f );
+  glVertex3f( 0.0f, 50.0f, 0.0f );
+  glVertex3f( 0.0f, 0.0f, 0.0f );
+    
+  glColor3f ( 0.0f, 0.0f, 1.0f );
+  glVertex3f( 0.0f, 0.0f, 50.0f );
+  glVertex3f( 0.0f, 0.0f, 0.0f );
+    
+  glEnd();
+  glPopMatrix();
 }
 
 void draw_cube()
@@ -75,4 +77,13 @@ void draw_cube()
   glVertex3dv(pointG);
   glVertex3dv(pointH);
   glEnd();
+}
+
+void draw_sphere(double r, double x, double y, double z)
+{
+  glPushMatrix();
+  glTranslatef(x, y ,z);
+  glutSolidSphere(r, 16, 16);
+  glPopMatrix();
+  
 }

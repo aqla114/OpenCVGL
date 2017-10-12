@@ -6,10 +6,10 @@
 
 //肌色検出の閾値
 int thread_H_lower = 0;
-int thread_H_upper = 23;
+int thread_H_upper = 20;
 int thread_S_lower = 50; 
 int thread_S_upper = 255;
-int thread_V_lower = 72; 
+int thread_V_lower = 50; 
 int thread_V_upper = 255;
 
 //VideoCapture
@@ -53,10 +53,10 @@ int main(int argc, char *argv[])
     tmp_img.create(frame.size(), CV_32FC3);
 
     //backgroundの初期化
-    set_background(avg_img, sgm_img);
+    // set_background(avg_img, sgm_img);
     //cv::imshow("first background", avg_img);
-    update_background(avg_img, sgm_img, frame, background_deleted_tmp);
-    imshow("background", background_deleted_tmp);
+    // update_background(avg_img, sgm_img, frame, background_deleted_tmp);
+    //imshow("background", background_deleted_tmp);
 
     int loopflag = true;
 
@@ -115,7 +115,6 @@ void detect_skin(cv::Mat &src, cv::Mat &dst)
     cv::medianBlur(src, src_hsv, 7);
     cv::cvtColor(src_hsv, src_hsv, CV_BGR2HSV);
 
-
     for (int y = 0; y < src_hsv.rows; y++)
     {
         //行先頭のポインタを取得
@@ -126,8 +125,10 @@ void detect_skin(cv::Mat &src, cv::Mat &dst)
             int a = src_hsv.step*y+(x*3);
             if(src_hsv.data[a] >= thread_H_lower &&
                src_hsv.data[a] <= thread_H_upper &&
-               src_hsv.data[a+1] >= thread_V_lower && 
-               src_hsv.data[a+2] >= thread_S_lower) //HSVでの検出
+               src_hsv.data[a+1] >= thread_S_lower &&
+               src_hsv.data[a+1] <= thread_S_upper &&
+               src_hsv.data[a+2] >= thread_V_lower &&
+               src_hsv.data[a+2] <= thread_V_upper) //HSVでの検出
             {
                 //肌色部分を白に
                 src_hsv.data[a] = 0;

@@ -263,7 +263,7 @@ void set_texture(){
       input[i].cols, input[i].rows, GL_RGB, GL_UNSIGNED_BYTE, input[i].data);
   }
   
-  cap.open(1);
+  cap.open(0);
   if (!cap.isOpened())
   {
     printf("cannot open the camera\n");
