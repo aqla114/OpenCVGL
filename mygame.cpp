@@ -1,12 +1,17 @@
-#include <opencv2/opencv.hpp>
+//#include <opencv2/opencv.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <GL/glut.h>
 #include "mylib.h"
+#include <cmath>
+#include <iostream>
+#include <list>
 
-#define WINDOW_X 640
-#define WINDOW_Y 640
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 960
 #define PI 3.1415
+#define ANGLE_OF_PERSPECTIVE 60.0
+#define FREQUENCY_OF_ENEMY 300
 #define WINDOW_NAME "sample"
 
 //関数群
@@ -17,6 +22,7 @@ void glut_display();
 void glut_keyboard(unsigned char key, int x, int y);
 void glut_mouse(int button, int state, int x, int y);
 void glut_motion(int x, int y);
+void glut_idle();
 
 //グローバル変数
 bool g_isLeftButtonOn = false;
@@ -28,7 +34,7 @@ class Camera
   //コンストラクタ
   Camera()
   {
-    x = 0.0, y = 0.0, z = 20.0;
+    x = 0.0, y = 0.0, z = -20.0;
     view_x = 0.0, view_y = 0.0, view_z = 0.0;
     up_x = 0.0, up_y = 1.0, up_z = 0.0;
     prevx = 0.0, prevy = 0.0;
@@ -41,6 +47,7 @@ class Camera
     prevx = initx, inity = 0.0;
   }
 
+	//cameraの位置を設定（カメラの実設置）
   void set()
   {
     if (cos(g_angle2)>0){
@@ -55,16 +62,17 @@ class Camera
           0.0, 0.0, 0.0, 0.0, -1.0, 0.0);}
   };
   
+	//カメラを初期位置に戻す
   void reset()
   {
-    x = 0.0, y = 0.0, z = 20.0;
+    x = 0.0, y = 0.0, z = -20.0;
     view_x = 0.0, view_y = 0.0, view_z = 0.0;
     up_x = 0.0, up_y = 1.0, up_z = 0.0;
     prevx = 0.0, prevy = 0.0;
     g_angle1 = 0.0, g_angle2 = 0.0;
   }
   
-  //カメラ位置の更新（描画自体はしていない）
+  //カメラ位置の更新（実設置はしていない）
   void move(int mouse_x, int mouse_y)
   {
     if(g_isLeftButtonOn == true){
@@ -100,47 +108,103 @@ class Player
 {
   public:
   //コンストラクタ
-  Player(int initx, int inity)
+  Player()
   {
-    x = initx;
-    y = inity;
+    x = 0.0;
+    y = 0.0;
+		z = -10.0;
+		width = 5.0;
+		height = 5.0;
     state = 0;
   };
 
   void move(int mouse_x, int mouse_y)
   {
     //スクリーン座標の中心をワールド座標(0,0)に移動
-    double x_center_is_zero = 1.0 * mouse_x - WINDOW_X / 2.0;
-    double y_center_is_zero = 1.0 * mouse_y - WINDOW_Y / 2.0;
+    double x_center_is_zero = 1.0 * mouse_x - WINDOW_WIDTH / 2.0;
+    double y_center_is_zero = 1.0 * mouse_y - WINDOW_HEIGHT / 2.0;
     
     //Playerの位置を調整
     if (g_isLeftButtonOn == false && g_isRightButtonOn == false)
     {
-      x = x_center_is_zero / (WINDOW_X / 2.0) * camera.z * std::tan(PI * 15 / 180);
-      y = -y_center_is_zero / (WINDOW_Y / 2.0) * camera.z * std::tan(PI * 15 / 180);
+			double angle = PI / 180.0 * ANGLE_OF_PERSPECTIVE / 2.0;
+      x = x_center_is_zero / (WINDOW_WIDTH / 2.0) * (camera.z - this->z) * std::tan(angle) *  WINDOW_WIDTH / WINDOW_HEIGHT;
+      y = y_center_is_zero / (WINDOW_HEIGHT / 2.0) * (camera.z - this->z) * std::tan(angle);
     }
-    printf("player.x = %f, player.y = %f\n", x, y);
+    //printf("player.x = %f, player.y = %f\n", x, y);
 
     glutPostRedisplay();
   };
 
   void render()
   {
-    glPushMatrix();
-    glTranslatef(x, y, 0.0);
-    draw_cube();
-    glPopMatrix();
+    draw_cube(x, y, z, width, height, 1.0);
   };
 
-  double x, y;
+	//このx,y,zは中心の座標
+  double x, y, z;
+	double width, height;
   int state;
 };
-Player player(0.0, 0.0);
+Player player;
 
 class Enemy
 {
+public:
+	Enemy(double init_x, double init_y, double init_z)
+	{
+		x = init_x;
+		y = init_y;
+		z = init_z;
+	}
 
+	void move()
+	{
+		//-z方向に速度speedで進む。
+		z -= speed;
+	}
+
+	//描画
+	void render()
+	{
+		draw_sphere(0.3, x, y, z);
+	}
+
+	//自らの座標
+	double x;
+	double y;
+	double z;
+
+private:
+	double speed = 0.05;
 };
+
+class EnemyController
+{
+public:
+	void generate_enemy()
+	{
+		//生成位置をgenerate_に入れて、Enemyオブジェクト生成
+		double generate_x = -generate_range_x + 2.0 * generate_range_x * std::rand() / RAND_MAX;
+		double generate_y = -generate_range_y + 2.0 * generate_range_y * std::rand() / RAND_MAX;
+		Enemy *enemy = new Enemy(generate_x, generate_y, generate_z);
+		
+		//生成したオブジェクトをEnemyHolderに格納
+		enemyHolder.push_back(*enemy);
+
+		printf("Enemy generated! : %f, %f, %f\n", enemy->x, enemy->y, enemy->z);
+	}
+
+	std::list<Enemy> enemyHolder;
+private:
+	//敵の生成領域（x方向の幅の半分、y方向の幅の半分、z方向の奥行き）
+	//-generate_range_x～generate_range_x、-generate_range_y～generate_range_y
+	double generate_range_x = 5.0;
+	double generate_range_y = 5.0;
+	double generate_z = 20.0;
+};
+
+EnemyController enemyController;
 
 int main(int argc, char **argv)
 {
@@ -164,7 +228,7 @@ void init_GL(int argc, char **argv)
 {
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
-  glutInitWindowSize(WINDOW_X, WINDOW_Y);
+  glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
   glutCreateWindow(WINDOW_NAME);
 }
 
@@ -182,6 +246,7 @@ void set_callback_functions()
   glutMouseFunc(glut_mouse);
   glutMotionFunc(glut_motion);
   glutPassiveMotionFunc(glut_motion);
+	glutIdleFunc(glut_idle);
 }
 
 void glut_keyboard(unsigned char key, int x , int y)
@@ -228,7 +293,7 @@ void glut_motion(int x, int y)
   //Playerの移動
   player.move(x, y);
   camera.move(x, y);
-  printf("x = %d, y = %d\n", x, y);
+	//printf("x = %d, y = %d\n", x, y);
 }
 
 //描画のコールバック関数
@@ -237,11 +302,11 @@ void glut_display()
   //描画モードの設定
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(30.0, 1.0, 0.1, 100);
+  gluPerspective(ANGLE_OF_PERSPECTIVE, 1.0 * WINDOW_WIDTH / WINDOW_HEIGHT, 0.1, 100);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-
+  
   //カメラの設定
   camera.set();
 
@@ -255,11 +320,65 @@ void glut_display()
   //playerを描画
   player.render();
 
-  //球描画
-  draw_sphere(0.1, 0.0, 0.0, 0.0);
+	//確認用の正方形描画
+	draw_square(-5.0, -5.0, 20.0, 10.0, 10.0);
+
+	//enemyHolderに入っているenemyを全て描画
+	std::list<Enemy>::iterator itr;
+	for (itr = enemyController.enemyHolder.begin(); itr != enemyController.enemyHolder.end(); itr++)
+	{
+		(*itr).render();
+	}
 
   glFlush();
   glDisable(GL_DEPTH_TEST);
 
   glutSwapBuffers();
+}
+
+void glut_idle()
+{
+	static int counter = 0;
+
+	if (counter == FREQUENCY_OF_ENEMY)
+	{
+		//敵を生成
+		enemyController.generate_enemy();
+
+		//counterを0に
+		counter = 0;
+	}
+
+	counter++;
+
+	//敵の移動および削除
+	std::list<Enemy>::iterator itr;
+	for (itr = enemyController.enemyHolder.begin(); itr != enemyController.enemyHolder.end(); )
+	{
+		//敵の移動
+		(*itr).move();
+
+		//Enemyが適当な位置に来たら削除。
+		if ((*itr).z < -20.0)
+		{
+			//itr番目の要素をenemyHolderから削除
+			itr = enemyController.enemyHolder.erase(itr);
+			printf("miss!\n");
+			//printf("Object enemy deleted! %d\n", enemyController.enemyHolder.size());
+		}
+		//PlayerにEnemyが当たったらEnemyを消す
+		else if (player.x < (*itr).x && (*itr).x < player.x + player.width
+				&& player.y < (*itr).y && (*itr).y < player.y + player.height
+				&& (*itr).z < player.z)
+		{
+			itr = enemyController.enemyHolder.erase(itr);
+			printf("hit!\n");
+		}
+		else
+		{
+			itr++;  //こうしないとerase(itr)で消してしまったitrに対してfor条件の参照が発生する。
+		}
+	}
+
+	glutPostRedisplay();
 }
