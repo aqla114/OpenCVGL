@@ -8,12 +8,9 @@ int thread_V_upper = 255;
 
 cv::VideoCapture cap;
 
-void open_capture(int argc, char *filename)
+void open_capture()
 {
-    if(argc > 1)
-        cap.open(filename);
-    else
-        cap.open(1);
+    cap.open(1);
     if(!cap.isOpened())
         cap.open(0);
     if(!cap.isOpened())

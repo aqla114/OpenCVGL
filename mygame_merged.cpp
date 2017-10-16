@@ -19,10 +19,12 @@
 #define ANGLE_OF_PERSPECTIVE 60.0
 #define FREQUENCY_OF_ENEMY 100
 #define WINDOW_NAME "sample"
+#define TEST_MODE 0 //0:カメラを使わない 1:カメラを使う
+
 
 //関数群
 void init_GL(int argc, char **argv);
-void init(int argc, char **argv);
+void init();
 void set_callback_functions();
 void glut_display();
 void glut_keyboard(unsigned char key, int x, int y);
@@ -201,7 +203,7 @@ public:
 	double z;
 
 private:
-	double speed = 0.05;
+	double speed = 0.05;  //Enemyの動く速度
 };
 
 class EnemyController
@@ -237,7 +239,7 @@ int main(int argc, char **argv)
   init_GL(argc, argv);
 
   //各種初期化
-  init(argc, argv);
+  init();
 
   //コールバック関数の登録
   set_callback_functions();
@@ -258,12 +260,14 @@ void init_GL(int argc, char **argv)
 }
 
 //初期化
-void init(int argc, char **argv)
+void init()
 {
   glClearColor(0.0, 0.0, 0.0, 0.0); 
 
+#if TEST_MODE
   //captureを開く
-  open_capture(argc, argv[1]);
+  open_capture();
+#endif
 }
 
 //コールバック関数の登録
@@ -409,7 +413,9 @@ void glut_idle()
 			itr++;  //こうしないとerase(itr)で消してしまったitrに対してfor条件の参照が発生する。
 		}
   }
-  
+
+#if TEST_MODE
+
   //手の検出により重心座標を得る
   cv::Mat frame, dst_img;
   cap >> frame;
@@ -427,6 +433,8 @@ void glut_idle()
     //playerの移動
     player.moveWithHand(gcenter.x, gcenter.y);
   }
+
+#endif
 
 	glutPostRedisplay();
 }

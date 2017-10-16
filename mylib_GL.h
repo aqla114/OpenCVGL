@@ -115,5 +115,4 @@ void draw_sphere(double r, double x, double y, double z)
   glTranslatef(x, y ,z);
   glutSolidSphere(r, 16, 16);
   glPopMatrix();
-  
 }
