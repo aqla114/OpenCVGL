@@ -11,7 +11,7 @@
 #include "mylib_GL.h"
 #include "mylib_CV.h"
 
-#define WINDOW_WIDTH 1280
+#define WINDOW_WIDTH 960
 #define WINDOW_HEIGHT 960
 #define FRAME_WIDTH 640
 #define FRAME_HEIGHT 480
@@ -33,7 +33,7 @@ void glut_idle();
 //グローバル変数
 bool g_isLeftButtonOn = false;
 bool g_isRightButtonOn = false;
-cv::Point gcenter(0, 0);  //手の重心の位置
+cv::Point gcenter(0, 0);
 
 class Camera
 {
@@ -125,7 +125,7 @@ class Player
     state = 0;
   };
 
-  void move(int mouse_x, int mouse_y)
+  void moveWithMouse(int mouse_x, int mouse_y)
   {
     //スクリーン座標の中心をワールド座標(0,0)に移動
     double x_center_is_zero = 1.0 * mouse_x - WINDOW_WIDTH / 2.0;
@@ -137,6 +137,24 @@ class Player
 			double angle = PI / 180.0 * ANGLE_OF_PERSPECTIVE / 2.0;
       x = x_center_is_zero / (WINDOW_WIDTH / 2.0) * (camera.z - this->z) * std::tan(angle) *  WINDOW_WIDTH / WINDOW_HEIGHT;
       y = y_center_is_zero / (WINDOW_HEIGHT / 2.0) * (camera.z - this->z) * std::tan(angle);
+    }
+    //printf("player.x = %f, player.y = %f\n", x, y);
+
+    glutPostRedisplay();
+  };
+
+  void moveWithHand(int hand_x, int hand_y)
+  {
+    //スクリーン座標の中心をワールド座標(0,0)に移動
+    double x_center_is_zero = 1.0 * hand_x - FRAME_WIDTH / 2.0;
+    double y_center_is_zero = 1.0 * hand_y - FRAME_HEIGHT / 2.0;
+    
+    //Playerの位置を調整
+    if (g_isLeftButtonOn == false && g_isRightButtonOn == false)
+    {
+			double angle = PI / 180.0 * ANGLE_OF_PERSPECTIVE / 2.0;
+      x = -x_center_is_zero / (FRAME_WIDTH / 2.0) * (camera.z - this->z) * std::tan(angle) *  FRAME_WIDTH / FRAME_HEIGHT;
+      y = y_center_is_zero / (FRAME_HEIGHT / 2.0) * (camera.z - this->z) * std::tan(angle);
     }
     //printf("player.x = %f, player.y = %f\n", x, y);
 
@@ -301,7 +319,9 @@ void glut_mouse(int button, int state, int x, int y)
 void glut_motion(int x, int y)
 {
   //Playerの移動
-  player.move(x, y);
+  player.moveWithMouse(x, y);
+
+  //Cameraの移動
   camera.move(x, y);
 	//printf("x = %d, y = %d\n", x, y);
 }
@@ -389,5 +409,24 @@ void glut_idle()
 			itr++;  //こうしないとerase(itr)で消してしまったitrに対してfor条件の参照が発生する。
 		}
   }
+  
+  //手の検出により重心座標を得る
+  cv::Mat frame, dst_img;
+  cap >> frame;
+  dst_img.create(frame.size(), CV_8UC1);
+
+  //手の検出
+  if (!frame.empty())
+  {  
+    detect_hand(frame, dst_img, gcenter);
+    printf("get the Gravity Center Point! : %d, %d\n", gcenter.x, gcenter.y);
+  }
+
+  if(gcenter.x != 0 && gcenter.y != 0)
+  {
+    //playerの移動
+    player.moveWithHand(gcenter.x, gcenter.y);
+  }
+
 	glutPostRedisplay();
 }
