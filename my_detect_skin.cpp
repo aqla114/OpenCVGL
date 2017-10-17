@@ -167,7 +167,7 @@ void detect_skin(cv::Mat &src, cv::Mat &dst)
         cv::approxPolyDP(contours[i], approx, 0.01 * cv::arcLength(contours[i], true), true);
         
         double a = contourArea(contours[i], false);
-        if (a > 10000)
+        if (a > 5000)
         {
             for (unsigned int j = 0; j < approx.size(); j++)
             {

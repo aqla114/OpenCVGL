@@ -3,24 +3,25 @@
 #include <stdlib.h>
 #include <list>
 #include <cmath>
-//#include <opencv2/opencv.hpp>
-//#include <opencv2/core/core.hpp>
-//#include <opencv2/imgproc/imgproc.hpp>
-//#include <opencv2/highgui/highgui.hpp>
-//#include "mylib_CV.h"
+#include <string.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include "mylib_CV.h"
 #include <GL/glut.h>
 #include "mylib_GL.h"
 
 
-#define WINDOW_WIDTH 960
-#define WINDOW_HEIGHT 960
+#define WINDOW_WIDTH 640
+#define WINDOW_HEIGHT 640
 #define FRAME_WIDTH 640
 #define FRAME_HEIGHT 480
 #define PI 3.1415
 #define MAX_HP 5
 #define ANGLE_OF_PERSPECTIVE 60.0
-#define FREQUENCY_OF_ENEMY 500
-#define SPEED_OF_ENEMY 0.02
+#define FREQUENCY_OF_ENEMY 50
+#define SPEED_OF_ENEMY 0.5
 #define WINDOW_NAME "sample"
 #define TEST_MODE 0 //0:カメラを使わない 1:カメラを使う
 
@@ -41,6 +42,8 @@ bool g_isRightButtonOn = false;
 
 #if TEST_MODE
 cv::Point gcenter(0, 0);
+cv::Point prev_gcenter(0, 0);
+cv::Point prev_prev_gcenter(0, 0);
 #endif TEST_MODE
 
 class Camera
@@ -253,7 +256,7 @@ class GameController
 		GameController()
 		{
 			hp = MAX_HP;
-			state = true;
+			state = false;
 			hp_offset_x = 0.1;
 			hp_offset_y = 0.1;
 			hp_offset_z = -15.0;
@@ -354,6 +357,15 @@ void set_callback_functions()
 
 void glut_keyboard(unsigned char key, int x , int y)
 {
+  static bool isStart = false;
+
+  //一番最初にキーが押されたときに、ゲーム開始
+  if (!isStart && !gameController.state)
+  {
+    isStart = true;
+    gameController.state = true;
+  }
+
   switch(key)
   {
     case 'q':
@@ -408,6 +420,14 @@ void glut_motion(int x, int y)
 //描画のコールバック関数
 void glut_display()
 {
+  if (!gameController.state)
+  {
+    printf("press_any_key");
+    glPushMatrix();
+    draw_string("press_any_key", WINDOW_WIDTH, WINDOW_HEIGHT, 100, 100);
+    glPopMatrix();
+  }
+
   //描画モードの設定
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -428,7 +448,7 @@ void glut_display()
 
 	//確認用の正方形描画
 	//draw_square(-5.0, -5.0, 20.0, 10.0, 10.0);
-	//draw_square(-5.0, -5.0, -20.0, 10.0, 10.0);
+  //draw_square(-5.0, -5.0, -20.0, 10.0, 10.0);
   
   //playerを描画
   player.render();
@@ -451,9 +471,12 @@ void glut_display()
 
 void glut_idle()
 {
-
-	if (!gameController.state)
-		return;
+  //ゲーム開始前とGAMEOVER後は表示しない
+  if (!gameController.state)
+  {
+    glutPostRedisplay();
+    return;
+  }
 	
 	static int counter = 0;
 
@@ -482,11 +505,11 @@ void glut_idle()
 			itr = enemyController.enemyHolder.erase(itr);
 
 			//hpを減らし、hpが0ならstate=falseにする。
-			if (gameController.decrease_hp() == 0)
-			{
-				gameController.state = false;
-				break;
-			}
+			// if (gameController.decrease_hp() == 0)
+			// {
+			// 	gameController.state = false;
+			// 	break;
+			// }
 			printf("HP = %d\n", gameController.hp);
 
 			printf("miss!\n");
@@ -520,10 +543,19 @@ void glut_idle()
     printf("get the Gravity Center Point! : %d, %d\n", gcenter.x, gcenter.y);
   }
 
+  //直近
+  prev_prev_gcenter.x = prev_gcenter.x;
+  prev_prev_gcenter.y = prev_gcenter.y;
+  prev_gcenter.x = gcenter.x;
+  prev_gcenter.y = gcenter.y;
+
+  cv::Point averagePt((prev_prev_gcenter.x + prev_gcenter.x + gcenter.x) / 3.0,
+                      (prev_prev_gcenter.y + prev_gcenter.y + gcenter.y) / 3.0);
+
   if(gcenter.x != 0 && gcenter.y != 0)
   {
     //playerの移動
-    player.moveWithHand(gcenter.x, gcenter.y);
+    player.moveWithHand(averagePt.x, averagePt.y);
   }
 
 #endif

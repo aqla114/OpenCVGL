@@ -2,40 +2,40 @@ void draw_axis()
 {
   glPushMatrix();
   glBegin(GL_LINES);
-    
-  glColor3f ( 1.0f, 0.0f, 0.0f );
-  glVertex3f( 50.0f, 0.0f, 0.0f );
-  glVertex3f( 0.0f, 0.0f, 0.0f );
-    
-  glColor3f ( 0.0f, 1.0f, 0.0f );
-  glVertex3f( 0.0f, 50.0f, 0.0f );
-  glVertex3f( 0.0f, 0.0f, 0.0f );
-    
-  glColor3f ( 0.0f, 0.0f, 1.0f );
-  glVertex3f( 0.0f, 0.0f, 50.0f );
-  glVertex3f( 0.0f, 0.0f, 0.0f );
-    
+
+  glColor3f(1.0f, 0.0f, 0.0f);
+  glVertex3f(50.0f, 0.0f, 0.0f);
+  glVertex3f(0.0f, 0.0f, 0.0f);
+
+  glColor3f(0.0f, 1.0f, 0.0f);
+  glVertex3f(0.0f, 50.0f, 0.0f);
+  glVertex3f(0.0f, 0.0f, 0.0f);
+
+  glColor3f(0.0f, 0.0f, 1.0f);
+  glVertex3f(0.0f, 0.0f, 50.0f);
+  glVertex3f(0.0f, 0.0f, 0.0f);
+
   glEnd();
   glPopMatrix();
 }
 
-//x,y‚É¶‰º‚Ì“_‚ğ—^‚¦Awidth‚Å‰¡•Ó‚Ì’·‚³Aheight‚Å‚‚³‚ğ—^‚¦‚éB
+//x,yï¿½Éï¿½ï¿½ï¿½ï¿½Ì“_ï¿½ï¿½^ï¿½ï¿½ï¿½Awidthï¿½Å‰ï¿½ï¿½Ó‚Ì’ï¿½ï¿½ï¿½ï¿½Aheightï¿½Åï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½ï¿½ï¿½ï¿½B
 void draw_square(double x, double y, double z, double width, double height)
 {
-	glPushMatrix();
-	glBegin(GL_POLYGON);
+  glPushMatrix();
+  glBegin(GL_POLYGON);
 
-	glColor3d(1.0, 0.0, 0.0);
-	glVertex3d(x, y, z);
-	glVertex3d(x + width, y, z);
-	glVertex3d(x + width, y + height, z);
-	glVertex3d(x, y + height, z);
-	
-	glEnd();
-	glPopMatrix();
+  glColor3d(1.0, 0.0, 0.0);
+  glVertex3d(x, y, z);
+  glVertex3d(x + width, y, z);
+  glVertex3d(x + width, y + height, z);
+  glVertex3d(x, y + height, z);
+
+  glEnd();
+  glPopMatrix();
 }
 
-//x,y,z‚ğ’†S‚Æ‚µ‚Ä‚¢‚éB
+//x,y,zï¿½ğ’†Sï¿½Æ‚ï¿½ï¿½Ä‚ï¿½ï¿½ï¿½B
 void draw_cube(double x = 0.0, double y = 0.0, double z = 0.0, double x_size = 2.0, double y_size = 2.0, double z_size = 2.0)
 {
   //GLdouble pointA[] = {1.5, -1.5, 1.5};
@@ -47,17 +47,17 @@ void draw_cube(double x = 0.0, double y = 0.0, double z = 0.0, double x_size = 2
   //GLdouble pointG[] = {-1.5, 1.5, -1.5};
   //GLdouble pointH[] = {1.5, 1.5, -1.5};
 
-	glPushMatrix();
-	glTranslatef(x, y, z);
-  
-	GLdouble pointA[] = { x_size / 2.0, -y_size / 2.0, z_size / 2.0 };
-	GLdouble pointB[] = { -x_size / 2.0, -y_size / 2.0, z_size / 2.0};
-	GLdouble pointC[] = { -x_size / 2.0, -y_size / 2.0,- z_size / 2.0 };
-	GLdouble pointD[] = { x_size / 2.0, -y_size / 2.0, -z_size / 2.0 };
-	GLdouble pointE[] = { x_size / 2.0, y_size / 2.0, z_size / 2.0 };
-	GLdouble pointF[] = { -x_size / 2.0, y_size / 2.0, z_size / 2.0 };
-	GLdouble pointG[] = { -x_size / 2.0, y_size / 2.0, -z_size / 2.0 };
-	GLdouble pointH[] = { x_size / 2.0, y_size / 2.0, -z_size / 2.0 };
+  glPushMatrix();
+  glTranslatef(x, y, z);
+
+  GLdouble pointA[] = {x_size / 2.0, -y_size / 2.0, z_size / 2.0};
+  GLdouble pointB[] = {-x_size / 2.0, -y_size / 2.0, z_size / 2.0};
+  GLdouble pointC[] = {-x_size / 2.0, -y_size / 2.0, -z_size / 2.0};
+  GLdouble pointD[] = {x_size / 2.0, -y_size / 2.0, -z_size / 2.0};
+  GLdouble pointE[] = {x_size / 2.0, y_size / 2.0, z_size / 2.0};
+  GLdouble pointF[] = {-x_size / 2.0, y_size / 2.0, z_size / 2.0};
+  GLdouble pointG[] = {-x_size / 2.0, y_size / 2.0, -z_size / 2.0};
+  GLdouble pointH[] = {x_size / 2.0, y_size / 2.0, -z_size / 2.0};
 
   glColor3d(0.0, 1.0, 1.0);
   glBegin(GL_POLYGON);
@@ -107,14 +107,40 @@ void draw_cube(double x = 0.0, double y = 0.0, double z = 0.0, double x_size = 2
   glVertex3dv(pointH);
   glEnd();
 
-	glPopMatrix();
+  glPopMatrix();
 }
 
 void draw_sphere(double r, double x, double y, double z)
 {
   glPushMatrix();
-	glColor3d(1.0, 0.0, 0.0);
-  glTranslatef(x, y ,z);
+  glColor3d(1.0, 0.0, 0.0);
+  glTranslatef(x, y, z);
   glutSolidSphere(r, 16, 16);
   glPopMatrix();
+}
+
+void draw_string(char *str, int w, int h, int x0, int y0)
+{
+    glDisable(GL_LIGHTING);
+    // å¹³è¡ŒæŠ•å½±ã«ã™ã‚‹
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0, w, h, 0);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // ç”»é¢ä¸Šã«ãƒ†ã‚­ã‚¹ãƒˆæç”»
+    glRasterPos2f(x0, y0);
+    int size = (int)strlen(str);
+    for(int i = 0; i < size; ++i){
+        char ic = str[i];
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ic);
+    }
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
 }
