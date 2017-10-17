@@ -35,6 +35,7 @@ void draw_square(double x, double y, double z, double width, double height)
 	glPopMatrix();
 }
 
+//x,y,z‚ğ’†S‚Æ‚µ‚Ä‚¢‚éB
 void draw_cube(double x = 0.0, double y = 0.0, double z = 0.0, double x_size = 2.0, double y_size = 2.0, double z_size = 2.0)
 {
   //GLdouble pointA[] = {1.5, -1.5, 1.5};
@@ -112,6 +113,7 @@ void draw_cube(double x = 0.0, double y = 0.0, double z = 0.0, double x_size = 2
 void draw_sphere(double r, double x, double y, double z)
 {
   glPushMatrix();
+	glColor3d(1.0, 0.0, 0.0);
   glTranslatef(x, y ,z);
   glutSolidSphere(r, 16, 16);
   glPopMatrix();
