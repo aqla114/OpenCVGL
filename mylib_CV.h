@@ -93,6 +93,7 @@ void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
                 number_of_points++;
             }
             cv::polylines(dst_img, approx, true, cv::Scalar(255, 0, 0), 2);
+            //cv::drawContours(dst_img, contours, i, cv::Scalar(255, 0, 0, 255), 3, CV_AA, hierarchy, max_level);
             //printf ("contours[%d].size = %f\n", i, a);
         }
     }
@@ -105,6 +106,12 @@ void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
 
     pt.x = gcenter.x;
     pt.y = gcenter.y;
+
+    cv::circle(dst_img, gcenter, 10, cv::Scalar(255,0,0), -1, CV_AA);  
+    
+    dst_img.copyTo(dst);
+
+    //cv::imshow("Contours", dst_img);
 
     //printf("gcenter = (%d, %d)\n", gcenter.x, gcenter.y);
 }

@@ -161,3 +161,10 @@ void draw_string(std::string str, int w, int h, int x0, int y0)
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 }
+
+template < typename T > std::string to_string( const T& n )
+{
+    std::ostringstream stm ;
+    stm << n ;
+    return stm.str() ;
+}

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <string>
 #include <opencv2/opencv.hpp>
-#include <opencv2/opencv_lib.hpp>
+//#include <opencv2/opencv_lib.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -15,17 +15,17 @@
 #include "mylib_GL.h"
 
 
-#define WINDOW_WIDTH 960
-#define WINDOW_HEIGHT 960
+#define WINDOW_WIDTH 640
+#define WINDOW_HEIGHT 640
 #define FRAME_WIDTH 640
 #define FRAME_HEIGHT 480
 #define PI 3.1415
 #define MAX_HP 5
 #define ANGLE_OF_PERSPECTIVE 60.0
-#define FREQUENCY_OF_ENEMY 800
-#define SPEED_OF_ENEMY 0.01
+#define FREQUENCY_OF_ENEMY 50
+#define SPEED_OF_ENEMY 0.5
 #define WINDOW_NAME "sample"
-#define TEST_MODE 0 //0:カメラを使わない 1:カメラを使う
+#define TEST_MODE 1 //0:カメラを使わない 1:カメラを使う
 
 
 //関数群
@@ -33,6 +33,7 @@ void init_GL(int argc, char **argv);
 void init();
 void set_callback_functions();
 void glut_display();
+void glut_display2();
 void glut_keyboard(unsigned char key, int x, int y);
 void glut_mouse(int button, int state, int x, int y);
 void glut_motion(int x, int y);
@@ -41,11 +42,12 @@ void glut_idle();
 //グローバル変数
 bool g_isLeftButtonOn = false;
 bool g_isRightButtonOn = false;
-
+int windowID[2];
 #if TEST_MODE
 cv::Point gcenter(0, 0);
 cv::Point prev_gcenter(0, 0);
 cv::Point prev_prev_gcenter(0, 0);
+cv::Mat dst_img;
 #endif TEST_MODE
 
 class Camera
@@ -231,8 +233,8 @@ class EnemyController
 	public:
 		EnemyController()
 		{
-			generate_range_x = 5.0;
-			generate_range_y = 5.0;
+			generate_range_x = 4.0;
+			generate_range_y = 4.0;
 			generate_z = 20.0;
 		}
 		void generate_enemy()
@@ -301,7 +303,7 @@ class GameController
 		void render_score()
 		{
 			std::string strScore;
-			strScore = "Score:" + std::to_string(score);
+			strScore = "Score:" + to_string(score);
 			glPushMatrix();
 			glColor3d(1.0, 1.0, 1.0);
 			draw_string(strScore, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH - 100, 20);
@@ -365,9 +367,17 @@ int main(int argc, char **argv)
 void init_GL(int argc, char **argv)
 {
   glutInit(&argc, argv);
+  glutInitDisplayMode(GLUT_RGBA);
+  glutInitWindowSize(640, 480);
+  windowID[1] = glutCreateWindow("mask");
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glutDisplayFunc(glut_display2);
+
   glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
   glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-  glutCreateWindow(WINDOW_NAME);
+  windowID[0] = glutCreateWindow(WINDOW_NAME);
+
+  glutSetWindow(windowID[0]);
 }
 
 //初期化
@@ -378,7 +388,13 @@ void init()
 #if TEST_MODE
   //captureを開く
   open_capture();
+  //matの初期化
+  cv::Mat frame;
+  cap >> frame;
+  dst_img.create(frame.size(), CV_8UC1);
 #endif
+
+printf("Initialized completed!\n");
 }
 
 //コールバック関数の登録
@@ -522,6 +538,25 @@ void glut_display()
   glutSwapBuffers();
 }
 
+void glut_display2()
+{
+  if (dst_img.empty())
+    return;
+
+  printf("glut_display2 loaded!\n");
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluOrtho2D(0.0, 640, 480, 0.0);
+  glViewport(0, 0, 640, 480);
+ 
+  cv::flip(dst_img, dst_img, 0);
+  cv::cvtColor(dst_img, dst_img, CV_GRAY2RGB);
+
+  glClear(GL_COLOR_BUFFER_BIT);
+  glDrawPixels(dst_img.cols, dst_img.rows, GL_RGB, GL_UNSIGNED_BYTE, dst_img.data);
+  glFlush();
+}
+
 void glut_idle()
 {
   //ゲーム開始前とGAMEOVER後は各種処理をすっ飛ばす
@@ -588,15 +623,18 @@ void glut_idle()
 #if TEST_MODE
 
   //手の検出により重心座標を得る
-  cv::Mat frame, dst_img;
+  cv::Mat frame;
   cap >> frame;
-  dst_img.create(frame.size(), CV_8UC1);
 
   //手の検出
   if (!frame.empty())
   {  
     detect_hand(frame, dst_img, gcenter);
+    glutSetWindow(windowID[1]);
+    // cv::imshow("Mask", dst_img);
     printf("get the Gravity Center Point! : %d, %d\n", gcenter.x, gcenter.y);
+    glutPostRedisplay();
+    glutSetWindow(windowID[0]);
   }
 
   //直近
