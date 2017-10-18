@@ -14,7 +14,6 @@
 #include <GL/glut.h>
 #include "mylib_GL.h"
 
-
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
 #define FRAME_WIDTH 640
@@ -22,8 +21,8 @@
 #define PI 3.1415
 #define MAX_HP 5
 #define ANGLE_OF_PERSPECTIVE 60.0
-#define FREQUENCY_OF_ENEMY 50
-#define SPEED_OF_ENEMY 0.5
+#define FREQUENCY_OF_ENEMY 20
+#define SPEED_OF_ENEMY 0.8
 #define WINDOW_NAME "sample"
 #define TEST_MODE 1 //0:カメラを使わない 1:カメラを使う
 
@@ -543,17 +542,20 @@ void glut_display2()
   if (dst_img.empty())
     return;
 
-  printf("glut_display2 loaded!\n");
+  //printf("glut_display2 loaded!\n");
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   gluOrtho2D(0.0, 640, 480, 0.0);
   glViewport(0, 0, 640, 480);
  
   cv::flip(dst_img, dst_img, 0);
-  cv::cvtColor(dst_img, dst_img, CV_GRAY2RGB);
+
+  cv::Mat tmp;
+  tmp.create(dst_img.size(), CV_8UC3);
+  cv::cvtColor(dst_img, tmp, CV_GRAY2RGB);
 
   glClear(GL_COLOR_BUFFER_BIT);
-  glDrawPixels(dst_img.cols, dst_img.rows, GL_RGB, GL_UNSIGNED_BYTE, dst_img.data);
+  glDrawPixels(tmp.cols, tmp.rows, GL_RGB, GL_UNSIGNED_BYTE, tmp.data);
   glFlush();
 }
 

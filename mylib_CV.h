@@ -24,6 +24,9 @@ void open_capture()
 void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
 {
     cv::Mat src_hsv;
+    cv::Mat tmp_gray;
+
+    tmp_gray.create(src_hsv.size(), CV_8UC1);
 
     src.copyTo(src_hsv);
 
@@ -33,12 +36,11 @@ void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
 
     for (int y = 0; y < src_hsv.rows; y++)
     {
-        //行先頭のポインタを取得
-        //cv::Vec3b *ptr_src_hsv = src_hsv.ptr<cv::Vec3b>(y);
         for (int x = 0; x < src_hsv.cols; x++)
         {
             //a番目のピクセルを取得
             int a = src_hsv.step*y+(x*3);
+            int b = tmp_gray.step * y + x;
             if(src_hsv.data[a] >= thread_H_lower &&
                src_hsv.data[a] <= thread_H_upper &&
                src_hsv.data[a+1] >= thread_S_lower &&
@@ -46,28 +48,32 @@ void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
                src_hsv.data[a+2] >= thread_V_lower &&
                src_hsv.data[a+2] <= thread_V_upper) //HSVでの検出
             {
-                //肌色部分を白に
+                // 肌色部分を白に
                 src_hsv.data[a] = 0;
                 src_hsv.data[a+1] = 0;
                 src_hsv.data[a+2] = 255;
+                // tmp_gray.data[b] = 255;
             }
             else
             {
+                //他の部分を黒に
                 src_hsv.data[a+2] = 0;
+                // tmp_gray.data[b] = 0;
             }
         }
-
     }
 
     cv::cvtColor(src_hsv, src_hsv, CV_HSV2BGR);
-    cv::cvtColor(src_hsv, src_hsv, CV_BGR2GRAY);
-    //ノイズがあるので平滑化
-    cv::medianBlur(src_hsv, src_hsv, 7);
+
+    cv::cvtColor(src_hsv, tmp_gray, CV_BGR2GRAY);
+
+    // ノイズがあるので平滑化
+    cv::medianBlur(tmp_gray, tmp_gray, 7);
 
     //mask_imgから手のみを検出
     std::vector< std::vector<cv::Point> > contours;
     std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(src_hsv, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+    cv::findContours(tmp_gray, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);  
 
     cv::Mat dst_img;    
     dst_img.create(src_hsv.size(), CV_8UC1);   
@@ -93,7 +99,6 @@ void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
                 number_of_points++;
             }
             cv::polylines(dst_img, approx, true, cv::Scalar(255, 0, 0), 2);
-            //cv::drawContours(dst_img, contours, i, cv::Scalar(255, 0, 0, 255), 3, CV_AA, hierarchy, max_level);
             //printf ("contours[%d].size = %f\n", i, a);
         }
     }
@@ -108,10 +113,8 @@ void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
     pt.y = gcenter.y;
 
     cv::circle(dst_img, gcenter, 10, cv::Scalar(255,0,0), -1, CV_AA);  
-    
-    dst_img.copyTo(dst);
 
-    //cv::imshow("Contours", dst_img);
+    dst_img.copyTo(dst);
 
     //printf("gcenter = (%d, %d)\n", gcenter.x, gcenter.y);
 }
