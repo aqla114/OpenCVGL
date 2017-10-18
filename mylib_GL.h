@@ -38,15 +38,6 @@ void draw_square(double x, double y, double z, double width, double height)
 //x,y,z�𒆐S�Ƃ��Ă���B
 void draw_cube(double x = 0.0, double y = 0.0, double z = 0.0, double x_size = 2.0, double y_size = 2.0, double z_size = 2.0)
 {
-  //GLdouble pointA[] = {1.5, -1.5, 1.5};
-  //GLdouble pointB[] = {-1.5, -1.5, 1.5};
-  //GLdouble pointC[] = {-1.5, -1.5, -1.5};
-  //GLdouble pointD[] = {1.5, -1.5, -1.5};
-  //GLdouble pointE[] = {1.5, 1.5, 1.5};
-  //GLdouble pointF[] = {-1.5, 1.5, 1.5};
-  //GLdouble pointG[] = {-1.5, 1.5, -1.5};
-  //GLdouble pointH[] = {1.5, 1.5, -1.5};
-
   glPushMatrix();
   glTranslatef(x, y, z);
 
@@ -143,4 +134,30 @@ void draw_string(char *str, int w, int h, int x0, int y0)
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
     glMatrixMode(GL_MODELVIEW);
+}
+
+void draw_string(std::string str, int w, int h, int x0, int y0)
+{
+	glDisable(GL_LIGHTING);
+	// 平行投影にする
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0, w, h, 0);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+
+	// 画面上にテキスト描画
+	glRasterPos2f(x0, y0);
+	int size = (int)str.size();
+	for (int i = 0; i < size; ++i) {
+		char ic = str[i];
+		glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ic);
+	}
+
+	glPopMatrix();
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
 }

@@ -1,8 +1,10 @@
 #include <opencv2/opencv.hpp>
+#include <opencv2/opencv_lib.hpp>
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <stdio.h>
+#include <iostream>
 #include <typeinfo>
 
 //肌色検出の閾値
@@ -18,20 +20,37 @@ cv::VideoCapture cap;
 
 void open_capture(int argc, char *filename);
 void detect_skin(cv::Mat &src, cv::Mat &dst);
-// void set_background(cv::Mat &avg_img, cv::Mat &sgm_img);
-// void update_background(cv::Mat &avg_img, cv::Mat &sgm_img, cv::Mat &frame, cv::Mat &dst_img);
+void test(cv::Mat &src, cv::Mat &dst)
+{
+	cv::imshow("test1", src);
+	cv::imshow("test2", dst);
+	printf("hoge");
+}
+
 
 
 int main(int argc, char *argv[])
 {
     //MatやVideoCaptureの宣言
     cv::Mat frame;
-    cv::Mat mask_img, dst_img;
+    cv::Mat mask_img, dst_img, src_img;
     cv::Mat avg_img, sgm_img;
     cv::Mat background_deleted_tmp;
 
     //CaptureのOpen
-    open_capture(argc, argv[1]);
+    // open_capture(argc, argv[1]);
+		if (argc > 1)
+			cap.open(argv[1]);
+		else
+			cap.open(0);
+		//if (!cap.isOpened())
+		//	cap.open(0);
+		if (!cap.isOpened())
+		{
+			printf("Cannot Open the video\n");
+			exit(0);
+		}
+		printf("Open the video succeeded!\n");
 
     //描画windowの準備
     cv::namedWindow("Input", 1);
@@ -46,17 +65,7 @@ int main(int argc, char *argv[])
     //各Matの初期化
     cap >> frame;
     mask_img.create(frame.size(), CV_8UC1);
-    dst_img.create(frame.size(), CV_8UC1);    
-    background_deleted_tmp.create(frame.size(), CV_8UC3);
-    avg_img.create(frame.size(), CV_32FC3);
-    sgm_img.create(frame.size(), CV_32FC3); 
-    tmp_img.create(frame.size(), CV_32FC3);
-
-    //backgroundの初期化
-    // set_background(avg_img, sgm_img);
-    //cv::imshow("first background", avg_img);
-    // update_background(avg_img, sgm_img, frame, background_deleted_tmp);
-    //imshow("background", background_deleted_tmp);
+    dst_img.create(frame.size(), CV_8UC3);    
 
     //領域検出
 
@@ -64,7 +73,9 @@ int main(int argc, char *argv[])
 
     while(loopflag)
     {
-        cap >> frame;
+			do {
+				cap >> frame;
+			} while (frame.empty());
 
         //frameが空ならループを抜ける
         if (frame.empty())
@@ -72,9 +83,18 @@ int main(int argc, char *argv[])
 
         //Input画像の表示
         cv::imshow("Input", frame);
-        
+
+				//test();
+				if (!frame.empty())
+					printf("frame is not empty\n");
+				if (!mask_img.empty())
+					printf("mask_img is not empty\n");
+
         //手の検出
-        detect_skin(frame, mask_img);
+				detect_skin(frame, mask_img);
+
+				//test(frame, mask_img);
+
 
         //mask画像の表示
         cv::imshow("Mask", mask_img);
@@ -83,6 +103,8 @@ int main(int argc, char *argv[])
         if (key == 27)
             loopflag = false;
     }
+
+		printf("finish\n");
     
     return 0;
 }
@@ -161,26 +183,27 @@ void detect_skin(cv::Mat &src, cv::Mat &dst)
 
     int number_of_points = 0;
 
-    for(int i = 0; i < contours.size(); i++)
-    {
-        std::vector<cv::Point> approx;
-        cv::approxPolyDP(contours[i], approx, 0.01 * cv::arcLength(contours[i], true), true);
-        
-        double a = contourArea(contours[i], false);
-        if (a > 5000)
-        {
-            for (unsigned int j = 0; j < approx.size(); j++)
-            {
-                printf("%d: %d, %d\n", j, approx[j].x, approx[j].y);
-                gcenter.x += approx[j].x;
-                gcenter.y += approx[j].y;
-                number_of_points++;
-            }
-            cv::polylines(dst_img, approx, true, cv::Scalar(255, 0, 0), 2);
-            //printf ("contours[%d].size = %f\n", i, a);
-            //cv::drawContours(dst_img, contours, i, cv::Scalar(255, 0, 0, 255), 3, CV_AA, hierarchy, max_level);
-        }
-    }
+    //for(int i = 0; i < contours.size(); i++)
+    //{
+    //    std::vector<cv::Point> approx;
+    //    cv::approxPolyDP(contours[i], approx, 0.01 * cv::arcLength(contours[i], true), true);
+    //    
+    //    double a = contourArea(contours[i], false);
+    //    if (a > 5000)
+    //    {
+    //        for (unsigned int j = 0; j < approx.size(); j++)
+    //        {
+    //            printf("%d: %d, %d\n", j, approx[j].x, approx[j].y);
+    //            gcenter.x += approx[j].x;
+    //            gcenter.y += approx[j].y;
+    //            number_of_points++;
+    //        }
+				//		printf("contours[%d].size = %f\n", i, a);
+    //        cv::polylines(dst_img, approx, true, cv::Scalar(255, 0, 0), 2);
+    //        printf ("contours[%d].size = %f\n", i, a);
+    //        //cv::drawContours(dst_img, contours, i, cv::Scalar(255, 0, 0, 255), 3, CV_AA, hierarchy, max_level);
+    //    }
+    //}
 
     if(number_of_points != 0)
     {

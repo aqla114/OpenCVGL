@@ -4,7 +4,9 @@
 #include <list>
 #include <cmath>
 #include <string.h>
+#include <string>
 #include <opencv2/opencv.hpp>
+#include <opencv2/opencv_lib.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -13,15 +15,15 @@
 #include "mylib_GL.h"
 
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 640
+#define WINDOW_WIDTH 960
+#define WINDOW_HEIGHT 960
 #define FRAME_WIDTH 640
 #define FRAME_HEIGHT 480
 #define PI 3.1415
 #define MAX_HP 5
 #define ANGLE_OF_PERSPECTIVE 60.0
-#define FREQUENCY_OF_ENEMY 50
-#define SPEED_OF_ENEMY 0.5
+#define FREQUENCY_OF_ENEMY 800
+#define SPEED_OF_ENEMY 0.01
 #define WINDOW_NAME "sample"
 #define TEST_MODE 0 //0:カメラを使わない 1:カメラを使う
 
@@ -173,6 +175,12 @@ class Player
     glutPostRedisplay();
   };
 
+	void reset()
+	{
+		x = 0.0;
+		y = 0.0;
+	}
+
   void render()
   {
     draw_cube(x, y, z, width, height, thickness);
@@ -237,7 +245,7 @@ class EnemyController
 			//生成したオブジェクトをEnemyHolderに格納
 			enemyHolder.push_back(*enemy);
 
-			printf("Enemy generated! : %f, %f, %f\n", enemy->x, enemy->y, enemy->z);
+			//printf("Enemy generated! : %f, %f, %f\n", enemy->x, enemy->y, enemy->z);
 		}
 
 		std::list<Enemy> enemyHolder;
@@ -256,7 +264,8 @@ class GameController
 		GameController()
 		{
 			hp = MAX_HP;
-			state = false;
+			state = 0;
+			score = 0;
 			hp_offset_x = 0.1;
 			hp_offset_y = 0.1;
 			hp_offset_z = -15.0;
@@ -289,10 +298,39 @@ class GameController
 			for (int i = 0; i < hp; i++)
 				draw_square(x - (hp_size + hp_offset) * i, y, hp_offset_z, hp_size, hp_size);
 		}
+		void render_score()
+		{
+			std::string strScore;
+			strScore = "Score:" + std::to_string(score);
+			glPushMatrix();
+			glColor3d(1.0, 1.0, 1.0);
+			draw_string(strScore, WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH - 100, 20);
+			glPopMatrix();
+		}
+		void restart()
+		{
+			//stateをstart前に戻す
+			state = 0;
 
-		std::list<int> hpHolder;
+			//hp回復
+			hp = MAX_HP;
+
+			//scoreを0に
+			score = 0;
+
+			//enemy全消し
+			enemyController.enemyHolder.clear();
+
+			//camera,playerの位置を初期位置に戻す
+			camera.reset();
+			player.reset();
+
+			glutPostRedisplay();
+		}
+
 		int hp;  //プレイヤーの体力
-		bool state; //ゲームの状態,falseのとき死んでいる
+		int state; //ゲームの状態、0:スタート前 1:プレイ中 2:ゲームオーバー中
+		int score;
 
 	private:
 		//hp表示位置のオフセット
@@ -337,7 +375,6 @@ void init()
 {
   glClearColor(0.0, 0.0, 0.0, 0.0);
 
-
 #if TEST_MODE
   //captureを開く
   open_capture();
@@ -357,14 +394,16 @@ void set_callback_functions()
 
 void glut_keyboard(unsigned char key, int x , int y)
 {
-  static bool isStart = false;
-
   //一番最初にキーが押されたときに、ゲーム開始
-  if (!isStart && !gameController.state)
+  if (gameController.state == 0)
   {
-    isStart = true;
-    gameController.state = true;
+		gameController.state = 1;  //make state "now-playing"
   }
+	////Gameover状態でキーが押されたときに、スタート前の状態に戻す。
+	if (gameController.state == 2)
+	{
+		gameController.restart();
+	}
 
   switch(key)
   {
@@ -405,9 +444,8 @@ void glut_mouse(int button, int state, int x, int y)
 //マウスの動きのコールバック関数
 void glut_motion(int x, int y)
 {
-
   //Playerの移動
-	if (gameController.state)
+	if (gameController.state ==  1)
 		player.moveWithMouse(x, y);
 
   //Cameraの移動
@@ -420,14 +458,6 @@ void glut_motion(int x, int y)
 //描画のコールバック関数
 void glut_display()
 {
-  if (!gameController.state)
-  {
-    printf("press_any_key");
-    glPushMatrix();
-    draw_string("press_any_key", WINDOW_WIDTH, WINDOW_HEIGHT, 100, 100);
-    glPopMatrix();
-  }
-
   //描画モードの設定
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -444,7 +474,7 @@ void glut_display()
   glEnable(GL_DEPTH_TEST);
 
   //軸描画
-  draw_axis();
+  //draw_axis();
 
 	//確認用の正方形描画
 	//draw_square(-5.0, -5.0, 20.0, 10.0, 10.0);
@@ -463,6 +493,29 @@ void glut_display()
 		(*itr).render();
 	}
 
+	//before start, print "press_any_key"
+	if (gameController.state == 0)
+	{
+		//printf("press_any_key");
+		glPushMatrix();
+		glColor3d(1.0, 0.0, 1.0);
+		draw_string("press any key", WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH / 2.0 - 50, WINDOW_HEIGHT / 2.0);
+		glPopMatrix();
+	}
+
+	//スコア表示
+	gameController.render_score();
+
+	//when GAMEOVER, print "game_over and restart for press any key"
+	if (gameController.state == 2)
+	{
+		glPushMatrix();
+		glColor3d(1.0, 0.0, 0.0);
+		draw_string("GAMEOVER", WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH / 2.0 - 50, WINDOW_HEIGHT / 2.0);
+		draw_string("to restart, press any key", WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_WIDTH / 2.0 - 120, WINDOW_HEIGHT / 2.0 + 20);
+		glPopMatrix();
+	}
+
   glFlush();
   glDisable(GL_DEPTH_TEST);
 
@@ -471,8 +524,8 @@ void glut_display()
 
 void glut_idle()
 {
-  //ゲーム開始前とGAMEOVER後は表示しない
-  if (!gameController.state)
+  //ゲーム開始前とGAMEOVER後は各種処理をすっ飛ばす
+  if (gameController.state != 1)
   {
     glutPostRedisplay();
     return;
@@ -499,17 +552,17 @@ void glut_idle()
 		(*itr).move();
 
 		//Enemyが適当な位置に来たらダメージ判定と削除。
-		if ((*itr).z < -20.0)
+		if ((*itr).z < -15.0)
 		{
 			//itr番目の要素をenemyHolderから削除
 			itr = enemyController.enemyHolder.erase(itr);
 
-			//hpを減らし、hpが0ならstate=falseにする。
-			// if (gameController.decrease_hp() == 0)
-			// {
-			// 	gameController.state = false;
-			// 	break;
-			// }
+			//hpを減らし、hpが0ならstate=2(:GameOver)にする。
+			 if (gameController.decrease_hp() == 0)
+			 {
+			 	gameController.state = 2;
+			 	break;
+			 }
 			printf("HP = %d\n", gameController.hp);
 
 			printf("miss!\n");
@@ -521,6 +574,9 @@ void glut_idle()
 				&& player.z - player.thickness / 2.0 < (*itr).z && (*itr).z < player.z + player.thickness / 2.0)
 		{
 			itr = enemyController.enemyHolder.erase(itr);
+
+			//scoreを増やす
+			gameController.score += 1;
 			printf("hit!\n");
 		}
 		else
