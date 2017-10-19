@@ -151,6 +151,8 @@ void detect_skin(cv::Mat &src, cv::Mat &dst)
     //cv::medianBlur(src_hsv, src_hsv, 7);
     //src_hsv.copyTo(dst);
 
+    imshow("grayhand", src_hsv);
+
     //mask_imgから手のみを検出
     std::vector< std::vector<cv::Point> > contours;
     std::vector<cv::Vec4i> hierarchy;

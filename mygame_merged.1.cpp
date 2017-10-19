@@ -22,8 +22,8 @@
 #define PI 3.1415
 #define MAX_HP 5
 #define ANGLE_OF_PERSPECTIVE 60.0
-#define FREQUENCY_OF_ENEMY 20
-#define SPEED_OF_ENEMY 0.8
+#define FREQUENCY_OF_ENEMY 100
+#define SPEED_OF_ENEMY 0.6
 #define WINDOW_NAME "Shooted!"
 #define TEST_MODE 1 //0:カメラを使わない 1:カメラを使う
 
@@ -38,14 +38,19 @@ void glut_mouse(int button, int state, int x, int y);
 void glut_motion(int x, int y);
 void glut_idle();
 
+void *function_cv(void *);
+void *function_gl(void *);
+
 //グローバル変数
 bool g_isLeftButtonOn = false;
 bool g_isRightButtonOn = false;
 int windowID[2];  //windowId[0] = main, windowId[1] = mask
+pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 #if TEST_MODE
 cv::Point gcenter(0, 0);
 cv::Point prev_gcenter(0, 0);
 cv::Point prev_prev_gcenter(0, 0);
+cv::Point averagePt(0, 0);
 cv::Mat dst_img;
 #endif
 
@@ -394,8 +399,24 @@ int main(int argc, char **argv)
   //コールバック関数の登録
   set_callback_functions();
 
+  //threadの作成
+  pthread_t threadGL, threadCV;
+  int retGL, retCV;
+
+  retGL = pthread_create(&threadGL, NULL, function_gl, NULL);
+  retCV = pthread_create(&threadCV, NULL, function_cv, NULL);  
+
+  if (retGL != 0 || retCV != 0)
+  {
+    printf("can not create therad!\n");
+    exit(1);
+  }
+
+  retGL = pthread_join(threadGL, NULL);
+  retCV = pthread_join(threadCV, NULL);
+
   //メインループ
-  glutMainLoop();
+  // glutMainLoop();
 
   return 0;
 }
@@ -498,7 +519,7 @@ void glut_mouse(int button, int state, int x, int y)
 void glut_motion(int x, int y)
 {
   //Playerの移動
-	if (gameController.state ==  1)
+	if (gameController.state ==  1 && TEST_MODE == 0)
 		player.moveWithMouse(x, y);
 
   //Cameraの移動
@@ -577,100 +598,126 @@ void glut_display2()
 }
 
 void glut_idle()
-{
+{  
   //ゲーム開始前とGAMEOVER後は各種処理をすっ飛ばす
   if (gameController.state != 1)
   {
     glutPostRedisplay();
     return;
   }
-	
-	static int counter = 0;
 
-	if (counter == FREQUENCY_OF_ENEMY)
-	{
-		//敵を生成
-		enemyController.generate_enemy();
+  // //手の方の描画
+  // glutSetWindow(windowID[1]);
+  // glutPostRedisplay();
 
-		//counterを0に
-		counter = 0;
-	}
+  //ゲーム画面の描画
+  glutSetWindow(windowID[0]);
 
-	counter++;
-
-	//敵の移動および削除
-	std::list<Enemy>::iterator itr;
-	for (itr = enemyController.enemyHolder.begin(); itr != enemyController.enemyHolder.end(); )
-	{
-		//敵の移動
-		(*itr).move();
-
-		//Enemyが適当な位置に来たらダメージ判定と削除。
-		if ((*itr).z < -15.0)
-		{
-			//itr番目の要素をenemyHolderから削除
-			itr = enemyController.enemyHolder.erase(itr);
-
-			//hpを減らし、hpが0ならstate=2(:GameOver)にする。
-			 if (gameController.decrease_hp() == 0)
-			 {
-			 	gameController.state = 2;
-			 	break;
-			 }
-			printf("HP = %d\n", gameController.hp);
-
-			printf("miss!\n");
-			//printf("Object enemy deleted! %d\n", enemyController.enemyHolder.size());
-		}
-		//PlayerにEnemyが当たったらEnemyを消す
-		else if (player.x - player.width / 2.0 < (*itr).x && (*itr).x < player.x + player.width / 2.0
-				&& player.y - player.height / 2.0 < (*itr).y && (*itr).y < player.y + player.height / 2.0
-				&& player.z - player.thickness / 2.0 < (*itr).z && (*itr).z < player.z + player.thickness / 2.0)
-		{
-			itr = enemyController.enemyHolder.erase(itr);
-
-			//scoreを増やす
-			gameController.score += 1;
-			printf("hit!\n");
-		}
-		else
-		{
-			itr++;  //こうしないとerase(itr)で消してしまったitrに対してfor条件の参照が発生する。
-		}
-  }
-
-#if TEST_MODE
-
-  //手の検出により重心座標を得る
-  cv::Mat frame;
-  cap >> frame;
-
-  //手の検出
-  if (!frame.empty())
-  {  
-    detect_hand(frame, dst_img, gcenter);
-    glutSetWindow(windowID[1]);
-    //printf("get the Gravity Center Point! : %d, %d\n", gcenter.x, gcenter.y);
-    glutPostRedisplay();
-    glutSetWindow(windowID[0]);
-  }
-
-  //直近
-  prev_prev_gcenter.x = prev_gcenter.x;
-  prev_prev_gcenter.y = prev_gcenter.y;
-  prev_gcenter.x = gcenter.x;
-  prev_gcenter.y = gcenter.y;
-
-  cv::Point averagePt((prev_prev_gcenter.x + prev_gcenter.x + gcenter.x) / 3.0,
-                      (prev_prev_gcenter.y + prev_gcenter.y + gcenter.y) / 3.0);
-
-  if(gcenter.x != 0 && gcenter.y != 0)
+  static int counter = 0;
+  
+  if (counter == FREQUENCY_OF_ENEMY)
   {
-    //playerの移動
-    player.moveWithHand(averagePt.x, averagePt.y);
+    //敵を生成
+    enemyController.generate_enemy();
+
+    //counterを0に
+    counter = 0;
   }
 
-#endif
+  counter++;
 
-	glutPostRedisplay();
+  //敵の移動および削除
+  std::list<Enemy>::iterator itr;
+  for (itr = enemyController.enemyHolder.begin(); itr != enemyController.enemyHolder.end(); )
+  {
+    //敵の移動
+    (*itr).move();
+
+    //Enemyが適当な位置に来たらダメージ判定と削除。
+    if ((*itr).z < -15.0)
+    {
+      //itr番目の要素をenemyHolderから削除
+      itr = enemyController.enemyHolder.erase(itr);
+
+      //hpを減らし、hpが0ならstate=2(:GameOver)にする。
+      // if (gameController.decrease_hp() == 0)
+      // {
+      //   gameController.state = 2;
+      //   break;
+      // }
+      printf("HP = %d\n", gameController.hp);
+
+      printf("miss!\n");
+      //printf("Object enemy deleted! %d\n", enemyController.enemyHolder.size());
+    }
+    //PlayerにEnemyが当たったらEnemyを消す
+    else if (player.x - player.width / 2.0 < (*itr).x && (*itr).x < player.x + player.width / 2.0
+        && player.y - player.height / 2.0 < (*itr).y && (*itr).y < player.y + player.height / 2.0
+        && player.z - player.thickness / 2.0 < (*itr).z && (*itr).z < player.z + player.thickness / 2.0)
+    {
+      itr = enemyController.enemyHolder.erase(itr);
+
+      //scoreを増やす
+      gameController.score += 1;
+      printf("hit!\n");
+    }
+    else
+    {
+      itr++;  //こうしないとerase(itr)で消してしまったitrに対してfor条件の参照が発生する。
+    }
+  }
+
+  glutPostRedisplay();
+}
+
+void *function_cv(void *)
+{
+  while (1)
+  {
+    if (gameController.state != 1)
+      continue;
+
+    //手の検出により重心座標を得る
+    cv::Mat frame;
+    cap >> frame;
+
+    //手の検出
+    if (!frame.empty())
+    {  
+      detect_hand(frame, dst_img, gcenter);
+      //printf("get the Gravity Center Point! : %d, %d\n", gcenter.x, gcenter.y);
+    }
+
+    //直近
+    prev_prev_gcenter.x = prev_gcenter.x;
+    prev_prev_gcenter.y = prev_gcenter.y;
+    prev_gcenter.x = gcenter.x;
+    prev_gcenter.y = gcenter.y;
+
+    averagePt = cv::Point((prev_prev_gcenter.x + prev_gcenter.x + gcenter.x) / 3.0,
+                          (prev_prev_gcenter.y + prev_gcenter.y + gcenter.y) / 3.0);
+
+    if(gcenter.x != 0 && gcenter.y != 0)
+    {
+      int r = pthread_mutex_lock(&m);
+      if (r != 0)
+      {
+        printf("connot lock!\n");
+        continue;
+      }
+      //playerの移動
+      player.moveWithHand(averagePt.x, averagePt.y);
+
+      r = pthread_mutex_unlock(&m);
+      if (r != 0)
+      {
+        printf("cannot unlock!\n");
+      }
+    }
+  }
+}
+
+void *function_gl(void *)
+{
+  glutMainLoop();
 }

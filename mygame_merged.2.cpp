@@ -13,7 +13,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "mylib_CV.h"
 #include <GL/glut.h>
-#include "mylib_GL.h"
+#include "mylib_GL.2.h"
 
 #define WINDOW_WIDTH 640
 #define WINDOW_HEIGHT 640
@@ -526,6 +526,15 @@ void glut_display()
 
   glEnable(GL_DEPTH_TEST);
 
+  GLfloat lightpos[] = {0.0, 0.0, -20.0, 1.0};
+  GLfloat diffuse[] = {1.0, 1.0, 1.0, 1.0};
+
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+
+  glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+
   //軸描画
   //draw_axis();
   
@@ -535,6 +544,9 @@ void glut_display()
   //enemyHolderに入っているenemyを全て描画
   enemyController.render_enemy();
 
+  glDisable(GL_LIGHT0);
+  glDisable(GL_LIGHTING);
+
 	//HPを描画
 	gameController.render_hp();
 
@@ -542,7 +554,8 @@ void glut_display()
   gameController.render_tutorial();
   
   //スコア表示
-	gameController.render_score();
+  gameController.render_score();
+
 
   glFlush();
   glDisable(GL_DEPTH_TEST);

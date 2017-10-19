@@ -10,9 +10,9 @@ cv::VideoCapture cap;
 
 void open_capture()
 {
-    cap.open(1);
+    cap.open(0);
     if(!cap.isOpened())
-        cap.open(0);
+        cap.open(1);
     if(!cap.isOpened())
     {
         printf("Cannot Open the video\n");
@@ -36,30 +36,27 @@ void detect_hand(cv::Mat &src, cv::Mat &dst, cv::Point &pt)
 
     for (int y = 0; y < src_hsv.rows; y++)
     {
+        //ピクセルの先頭行を取得
+        cv::Vec3b *ptr_src = src_hsv.ptr<cv::Vec3b>(y);
+
         for (int x = 0; x < src_hsv.cols; x++)
         {
-            //a番目のピクセルを取得
-            int a = src_hsv.step*y+(x*3);
-            int b = tmp_gray.step * y + x;
-            if(src_hsv.data[a] >= thread_H_lower &&
-               src_hsv.data[a] <= thread_H_upper &&
-               src_hsv.data[a+1] >= thread_S_lower &&
-               src_hsv.data[a+1] <= thread_S_upper &&
-               src_hsv.data[a+2] >= thread_V_lower &&
-               src_hsv.data[a+2] <= thread_V_upper) //HSVでの検出
-            {
+            //ピクセルの要素を取得
+            cv::Vec3b hsv_src = ptr_src[x];
+
+            if(hsv_src[0] >= thread_H_lower &&
+                hsv_src[0] <= thread_H_upper &&
+                hsv_src[1] >= thread_S_lower &&
+                hsv_src[2] >= thread_V_lower) //HSVでの検出
+             {
                 // 肌色部分を白に
-                src_hsv.data[a] = 0;
-                src_hsv.data[a+1] = 0;
-                src_hsv.data[a+2] = 255;
-                // tmp_gray.data[b] = 255;
-            }
-            else
-            {
+                ptr_src[x] = cv::Vec3b(0, 0, 255);
+             }
+             else
+             {
                 //他の部分を黒に
-                src_hsv.data[a+2] = 0;
-                // tmp_gray.data[b] = 0;
-            }
+                ptr_src[x] = cv::Vec3b(0, 0, 0);
+             }
         }
     }
 
